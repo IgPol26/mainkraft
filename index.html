@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Minecraft World | Платформа для карт</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Minecraft', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background: #0a0f0a;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Фоновый градиент как в Minecraft */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #1a472a 0%, #0d2b1a 50%, #0a1f12 100%);
+            z-index: -2;
+        }
+
+        /* Паттерн травы */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                repeating-linear-gradient(90deg, rgba(60, 180, 60, 0.05) 0px, rgba(60, 180, 60, 0.05) 2px, transparent 2px, transparent 8px),
+                repeating-linear-gradient(0deg, rgba(60, 180, 60, 0.05) 0px, rgba(60, 180, 60, 0.05) 2px, transparent 2px, transparent 8px);
+            z-index: -1;
+        }
+
+        /* Плавающие блоки на фоне */
+        .floating-block {
+            position: fixed;
+            opacity: 0.08;
+            pointer-events: none;
+            z-index: -1;
+            animation: float 20s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Шапка с травой */
+        .grass-header {
+            background: linear-gradient(135deg, #5a8f3c 0%, #3d6b24 100%);
+            border-radius: 30px;
+            padding: 30px 20px;
+            margin-bottom: 25px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+            border-bottom: 4px solid #8b5a2b;
+        }
+
+        .grass-header::before {
+            content: '🌿';
+            position: absolute;
+            font-size: 60px;
+            bottom: -10px;
+            left: 10px;
+            opacity: 0.3;
+            animation: sway 3s infinite;
+        }
+
+        .grass-header::after {
+            content: '🌱';
+            position: absolute;
+            font-size: 40px;
+            top: 10px;
+            right: 10px;
+            opacity: 0.3;
+            animation: sway 2.5s infinite reverse;
+        }
+
+        @keyframes sway {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+
+        h1 {
+            font-size: 32px;
+            color: #ffd700;
+            text-shadow: 3px 3px 0px #8b5a2b;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .subtitle {
+            color: #ffecb3;
+            font-size: 14px;
+            background: rgba(0,0,0,0.3);
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+        }
+
+        /* Карточки в стиле Minecraft */
+        .minecraft-card {
+            background: rgba(38, 38, 38, 0.95);
+            border-radius: 16px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            border: 2px solid #5a5a5a;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .minecraft-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.5);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #4a4a4a 0%, #2a2a2a 100%);
+            padding: 15px 20px;
+            border-bottom: 2px solid #ffd700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-header h2 {
+            color: #ffd700;
+            font-size: 18px;
+            margin: 0;
+        }
+
+        .card-content {
+            padding: 20px;
+        }
+
+        /* Область загрузки */
+        .upload-zone {
+            border: 3px dashed #6b8c42;
+            border-radius: 16px;
+            padding: 40px 20px;
+            text-align: center;
+            background: rgba(30, 30, 30, 0.8);
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+
+        .upload-zone:hover {
+            border-color: #ffd700;
+            background: rgba(50, 50, 50, 0.9);
+            transform: scale(1.02);
+        }
+
+        .pixel-icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+            display: inline-block;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Поле ввода */
+        .minecraft-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: #2a2a2a;
+            border: 2px solid #6b8c42;
+            border-radius: 12px;
+            color: #ffd700;
+            font-size: 16px;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .minecraft-input:focus {
+            outline: none;
+            border-color: #ffd700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .minecraft-input::placeholder {
+            color: #888;
+        }
+
+        /* Кнопки в стиле Minecraft */
+        .minecraft-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            font-family: inherit;
+        }
+
+        .btn-green {
+            background: linear-gradient(135deg, #5a8f3c 0%, #3d6b24 100%);
+            color: white;
+            box-shadow: 0 4px 0 #2a4a12;
+        }
+
+        .btn-green:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #2a4a12;
+        }
+
+        .btn-orange {
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+            color: white;
+            box-shadow: 0 4px 0 #a04000;
+        }
+
+        .btn-red {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            box-shadow: 0 4px 0 #8b1a1a;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 14px;
+            width: auto;
+        }
+
+        /* Список карт */
+        .map-item {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-left: 4px solid #ffd700;
+            transition: all 0.2s;
+        }
+
+        .map-item:hover {
+            transform: translateX(5px);
+            border-left-width: 6px;
+        }
+
+        .map-preview {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .map-icon {
+            font-size: 48px;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));
+        }
+
+        .map-details {
+            flex: 1;
+        }
+
+        .map-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+
+        .map-meta {
+            font-size: 11px;
+            color: #aaa;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .map-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        /* Статистика */
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        .stat-item {
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(10px);
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            flex: 1;
+            border: 1px solid #ffd700;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffd700;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #ccc;
+        }
+
+        /* Пустое состояние */
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: #888;
+        }
+
+        .empty-gif {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.7;
+        }
+
+        /* Анимации */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .map-item {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        /* Модальное окно */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 300px;
+            text-align: center;
+            border: 2px solid #ffd700;
+        }
+
+        /* Адаптив */
+        @media (max-width: 550px) {
+            .container {
+                padding: 12px;
+            }
+            
+            .map-actions {
+                flex-direction: column;
+            }
+            
+            .btn-small {
+                width: 100%;
+            }
+            
+            .stats-bar {
+                flex-wrap: wrap;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Плавающие пиксельные блоки -->
+<div class="floating-block" style="top: 10%; left: 5%;"><img src="https://minecraft.wiki/images/Block_of_Diamond_JE3_BE2.png?d29b7" width="40" style="image-rendering: pixelated;"></div>
+<div class="floating-block" style="top: 70%; left: 85%; animation-duration: 25s;"><img src="https://minecraft.wiki/images/Grass_Block_JE5_BE2.png?f0d81" width="50" style="image-rendering: pixelated;"></div>
+<div class="floating-block" style="top: 40%; left: 90%; animation-duration: 18s;"><img src="https://minecraft.wiki/images/Crafting_Table_JE3_BE2.png?9b5e6" width="35" style="image-rendering: pixelated;"></div>
+
+<div class="container">
+    <!-- Шапка -->
+    <div class="grass-header">
+        <h1>
+            <span>⛏️</span> Minecraft World <span>🌍</span>
+        </h1>
+        <h3>Игрок Илья</h3>
+        <div class="subtitle">🔹 Публикуй и делись своими картами 🔹</div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="stats-bar" id="statsBar">
+        <div class="stat-item">
+            <span class="stat-number" id="totalMaps">0</span>
+            <span class="stat-label">🗺️ Карт</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number" id="totalSize">0</span>
+            <span class="stat-label">💾 Всего</span>
+        </div>
+    </div>
+
+    <!-- Карточка загрузки -->
+    <div class="minecraft-card">
+        <div class="card-header">
+            <span>📤</span>
+            <h2>Загрузить новую карту</h2>
+        </div>
+        <div class="card-content">
+            <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                <div class="pixel-icon">🗺️📦</div>
+                <div style="color: #ffd700; font-weight: bold;">Нажми, чтобы выбрать карту</div>
+                <small style="color: #aaa;">Поддерживаются: .zip, .mcworld, .rar</small>
+            </div>
+            <input type="file" id="fileInput" accept=".zip,.mcworld,.rar,.mcaddon">
+            
+            <div style="margin-top: 15px;">
+                <label style="color: #ffd700; font-size: 14px;">🏷️ Название карты:</label>
+                <input type="text" id="mapName" class="minecraft-input" placeholder="Например: Приключение в замке">
+            </div>
+            
+            <button class="minecraft-btn btn-green" onclick="uploadMap()" style="margin-top: 20px;">
+                🌟 Опубликовать карту
+            </button>
+        </div>
+    </div>
+
+    <!-- Список карт -->
+    <div class="minecraft-card">
+        <div class="card-header">
+            <span>📚</span>
+            <h2>Библиотека карт</h2>
+        </div>
+        <div class="card-content">
+            <div id="mapsList">
+                <div class="empty-state">
+                    <div class="empty-gif">🎮✨</div>
+                    <div>Пока нет карт...</div>
+                    <small>Загрузи свою первую карту и поделись ей!</small>
+                </div>
+            </div>
+            
+            <button class="minecraft-btn btn-red" onclick="clearAllMaps()" style="margin-top: 15px;">
+                🗑️ Очистить всё
+            </button>
+        </div>
+    </div>
+
+    <!-- Подвал -->
+    <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">
+        <div>⛏️ Crafted with love for Minecraft community ⛏️</div>
+        <div style="margin-top: 5px;">Все карты хранятся в твоём телефоне</div>
+    </div>
+</div>
+
+<!-- Модальное окно -->
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <div style="font-size: 48px; margin-bottom: 10px;" id="modalIcon">✅</div>
+        <p id="modalMessage" style="color: #ffd700; margin-bottom: 15px;">Сообщение</p>
+        <button class="minecraft-btn btn-green" onclick="closeModal()" style="width: 100%;">OK</button>
+    </div>
+</div>
+
+<script>
+    const STORAGE_KEY = 'minecraft_maps';
+    
+    function loadMaps() {
+        const mapsJson = localStorage.getItem(STORAGE_KEY);
+        if (!mapsJson) return [];
+        try {
+            return JSON.parse(mapsJson);
+        } catch(e) {
+            return [];
+        }
+    }
+    
+    function saveMaps(maps) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(maps));
+        updateStats();
+    }
+    
+    function showMessage(message, isError = false) {
+        document.getElementById('modalMessage').textContent = message;
+        document.getElementById('modalIcon').textContent = isError ? '❌' : '✅';
+        document.getElementById('modal').style.display = 'flex';
+    }
+    
+    function closeModal() {
+        document.getElementById('modal').style.display = 'none';
+    }
+    
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    function getMapIcon(fileName) {
+        const name = fileName.toLowerCase();
+        if (name.includes('adventure') || name.includes('приключени')) return '⚔️🗺️';
+        if (name.includes('parkour') || name.includes('паркур')) return '🏃‍♂️🎯';
+        if (name.includes('pvp') || name.includes('битва')) return '⚔️🛡️';
+        if (name.includes('survival') || name.includes('выживани')) return '🌲🔥';
+        if (name.includes('creative') || name.includes('креатив')) return '🎨🏗️';
+        if (name.includes('puzzle') || name.includes('головоломк')) return '🧩🧠';
+        if (name.includes('horror') || name.includes('хоррор')) return '👻🏚️';
+        return '🗺️✨';
+    }
+    
+    function uploadMap() {
+        const fileInput = document.getElementById('fileInput');
+        const customName = document.getElementById('mapName').value.trim();
+        
+        if (!fileInput.files || fileInput.files.length === 0) {
+            showMessage('Выбери файл карты!', true);
+            return;
+        }
+        
+        const file = fileInput.files[0];
+        
+        if (file.size > 50 * 1024 * 1024) {
+            showMessage('Файл слишком большой! Максимум 50MB', true);
+            return;
+        }
+        
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            const maps = loadMaps();
+            const id = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            
+            const newMap = {
+                id: id,
+                name: customName || file.name.replace(/\.[^/.]+$/, ""),
+                filename: file.name,
+                size: file.size,
+                sizeFormatted: formatFileSize(file.size),
+                data: e.target.result,
+                type: file.type,
+                date: new Date().toLocaleString('ru-RU'),
+                timestamp: Date.now()
+            };
+            
+            maps.unshift(newMap);
+            saveMaps(maps);
+            
+            fileInput.value = '';
+            document.getElementById('mapName').value = '';
+            
+            showMessage(`✨ Карта "${newMap.name}" опубликована!`);
+            renderMapsList();
+        };
+        
+        reader.onerror = function() {
+            showMessage('Ошибка при чтении файла!', true);
+        };
+        
+        reader.readAsDataURL(file);
+    }
+    
+    function downloadMap(id) {
+        const maps = loadMaps();
+        const map = maps.find(m => m.id === id);
+        
+        if (!map) {
+            showMessage('Карта не найдена!', true);
+            return;
+        }
+        
+        const link = document.createElement('a');
+        link.href = map.data;
+        link.download = map.filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showMessage(`📥 Скачивание: ${map.name}`);
+    }
+    
+    function deleteMap(id) {
+        if (confirm('🗑️ Точно удалить эту карту?')) {
+            const maps = loadMaps();
+            const filtered = maps.filter(m => m.id !== id);
+            saveMaps(filtered);
+            renderMapsList();
+            showMessage(`Карта удалена`);
+        }
+    }
+    
+    function clearAllMaps() {
+        if (confirm('⚠️ ВНИМАНИЕ! Это удалит ВСЕ карты навсегда. Продолжить?')) {
+            localStorage.removeItem(STORAGE_KEY);
+            renderMapsList();
+            showMessage(`🧹 Все карты очищены`);
+        }
+    }
+    
+    function updateStats() {
+        const maps = loadMaps();
+        const totalMaps = maps.length;
+        const totalBytes = maps.reduce((sum, map) => sum + map.size, 0);
+        
+        document.getElementById('totalMaps').textContent = totalMaps;
+        document.getElementById('totalSize').textContent = formatFileSize(totalBytes);
+    }
+    
+    function renderMapsList() {
+        const maps = loadMaps();
+        const container = document.getElementById('mapsList');
+        
+        if (maps.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-gif">🎮✨🪣</div>
+                    <div style="color: #ffd700;">Здесь пока пусто...</div>
+                    <small>Загрузи свою первую карту выше ⬆️</small>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        maps.forEach(map => {
+            const icon = getMapIcon(map.name);
+            html += `
+                <div class="map-item">
+                    <div class="map-preview">
+                        <div class="map-icon">${icon}</div>
+                        <div class="map-details">
+                            <div class="map-name">${escapeHtml(map.name)}</div>
+                            <div class="map-meta">
+                                <span>📄 ${escapeHtml(map.filename)}</span>
+                                <span>💾 ${map.sizeFormatted}</span>
+                                <span>📅 ${map.date}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="map-actions">
+                        <button class="minecraft-btn btn-green btn-small" onclick="downloadMap('${map.id}')">
+                            ⬇️ Скачать
+                        </button>
+                        <button class="minecraft-btn btn-red btn-small" onclick="deleteMap('${map.id}')">
+                            🗑️ Удалить
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    document.getElementById('mapName').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            uploadMap();
+        }
+    });
+    
+    renderMapsList();
+    updateStats();
+</script>
+</body>
+</html>
